@@ -24,6 +24,7 @@
 - [**Motivation**](#motivation)
 - [**Installation**](#installation)
 - [**Usage**](#usage)
+- [**Todo**](#todo)
 - [**License**](#license)
 
 # Motivation
@@ -128,7 +129,6 @@ FetchX throws when the response is not successful and contains helper methods to
 
 ```typescript
 fetchx('dashboard')
-    .get()
     .searchParams({ page: String(1) })
     .notFound(error => {/* ... */
     })
@@ -138,6 +138,7 @@ fetchx('dashboard')
     })
     .error(425, error => {/* ... */
     })
+    .get()
     .response(response => {/* ... */
     })
     .catch(error => {/* uncaught errors */
@@ -210,7 +211,7 @@ apiInstance
 ## Package Manager
 
 ```sh
-npm i fetchx # or yarn/pnpm add fetchx
+npm i @gwakko/fetch-x # or yarn/pnpm add @gwakko/fetch-x
 ```
 
 # Usage
@@ -219,15 +220,15 @@ npm i fetchx # or yarn/pnpm add fetchx
 
 ```typescript
 // ECMAScript modules
-import fetchx from 'fetch-x';
-import { fetchx } from 'fetch-x';
+import fetchx from '@gwakko/fetch-x';
+import { fetchx } from '@gwakko/fetch-x';
 ```
 
 ## Minimal Example
 
 ```typescript
 import { z } from 'zod';
-import { fetchx } from 'fetch-x';
+import { fetchx } from '@gwakko/fetch-x';
 
 // Instantiate and configure fetchx
 const api = fetchx('https://jsonplaceholder.typicode.com', { mode: 'cors' });
@@ -312,7 +313,7 @@ These methods are available from the main default export and can be used to inst
 globally.
 
 ```typescript
-import { fetchx } from 'fetch-x';
+import { fetchx } from '@gwakko/fetch-x';
 
 fetchx.defaults.baseUrl = 'http://base.api';
 fetchx.defaults.interceptors.request.push((request) => {
@@ -376,7 +377,7 @@ Catchers are optional, but if none are provided an error will still be thrown fo
 you to catch it.
 
 ```typescript
-import { fetchx } from 'fetch-x';
+import { fetchx } from '@gwakko/fetch-x';
 
 fetchx('...')
     .badRequest((err) => console.log(err.status))
@@ -446,6 +447,10 @@ fetchx('...')
 
 abortController.abort();
 ```
+
+# TODO
+
+- Add Progress Upload & Download
 
 # License
 

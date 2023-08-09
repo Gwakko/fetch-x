@@ -1,6 +1,6 @@
 {
   "name": "@gwakko/fetch-x",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "A sleek interface wrapped over fetch, offering both an intuitive syntax and robust response body validation for data assurance.",
   "keywords": [
     "fetch",
