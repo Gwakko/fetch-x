@@ -134,6 +134,8 @@ fetchx('dashboard')
     })
     .unauthorized(error => {/* ... */
     })
+    .onUnauthorized((self/*type of fetchx() instance*/) => {/* ... */
+    })
     .error(HttpStatusCode.IM_A_TEAPOT, error => {/* ... */
     })
     .error(425, error => {/* ... */
@@ -176,7 +178,7 @@ fetchx('http://api')
 
 #### Because configuration should not rhyme with repetition.
 
-A Wretch object is immutable which means that you can reuse previous instances safely.
+A fetchx object is immutable which means that you can reuse previous instances safely.
 
 ```javascript
 // Cross origin authenticated requests on an external API
@@ -276,7 +278,7 @@ const UsersArraySchema = z.array(UserSchema);
 
 try {
     // Fetch todos
-    const todos = await api.url('/todos').get().reslover(TodosSchema).validated();
+    const todos = await api.resolver(TodosSchema).url('/todos').get().validated();
     // const todos = await api.url('/todos').get().json(); // without validation
     const todo = todos.at(0);
     const todoUser = await api.resolver(UserSchema).url(`/users?id=${todo.userId}`).get().validated();
@@ -309,7 +311,7 @@ try {
 
 ### FetchX defaults
 
-These methods are available from the main default export and can be used to instantiate wretch and configure it
+These methods are available from the main default export and can be used to instantiate fetchx and configure it
 globally.
 
 ```typescript
@@ -339,6 +341,8 @@ Helper Methods are used to configure the request and program actions.
 fetchx()
     .url('/posts/1')
     .headers({ 'Cache-Control': 'no-cache' })
+    // or
+    .headers((headers) => ({ ...headers, 'New-header': 'hello' }))
     .contentType('text/html')
 ```
 
@@ -351,7 +355,7 @@ You can pass optional body arguments to these methods.
 
 ```typescript
 fetchx().url('/url').get();
-fetchx().url('/url').post({ json: 'body' });
+fetchx().url('/url').post({ propertyName: 'body' });
 ```
 
 **NOTE:** The Content-Type header will be automatically set based on the datatype of the body in a fetch request:

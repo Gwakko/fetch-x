@@ -1,4 +1,6 @@
 export declare const JSON_MIME_TYPE = "application/json";
+export declare const TEXT_HTML_MIME_TYPE = "text/html";
+export declare const MULTIPART_FORM_DATA_MIME_TYPE = "multipart/form-data";
 export declare const X_WWW_FORM_URLENCODED_MIME_TYPE = "application/x-www-form-urlencoded";
 export declare const CONTENT_TYPE_HEADER = "Content-Type";
 export declare const AUTHORIZATION_HEADER = "Authorization";

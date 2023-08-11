@@ -5,6 +5,7 @@ import type {
     RequestResolverOptions,
 } from './types';
 import { isFunction } from './utils';
+import { ResolverException } from './exception';
 
 export class ApiRequest<
     TResponseBody = unknown,
@@ -110,7 +111,7 @@ export class ApiRequest<
 
     private validate(data: unknown): TResponseBody {
         if (!this.resolver) {
-            throw new Error('Invalid resolver');
+            throw new ResolverException();
         }
 
         if (
@@ -129,6 +130,6 @@ export class ApiRequest<
             return this.resolver.safeParse(data);
         }
 
-        throw new Error('Invalid resolver');
+        throw new ResolverException();
     }
 }

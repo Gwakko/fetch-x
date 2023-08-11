@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.api = exports.Api = void 0;
 const constants_1 = require("./constants");
-const api_exception_1 = require("./api.exception");
+const exception_1 = require("./exception");
 const api_request_1 = require("./api-request");
 const utils_1 = require("./utils");
 const defaultSchemaOptions = {
@@ -39,8 +39,9 @@ class Api {
     _abortController;
     _onAbortSignalFn;
     _replaceSearchParams = false;
-    _contentType = constants_1.JSON_MIME_TYPE;
+    _contentType;
     _authorization;
+    _onUnauthorizedFn;
     _retries = 0;
     _refreshRetries = 1;
     constructor(baseUrl, options) {
@@ -64,7 +65,12 @@ class Api {
         this._interceptors = structuredClone(defaults.interceptors);
     }
     headers(headers) {
-        this._headers = headers;
+        if ((0, utils_1.isFunction)(headers)) {
+            this._headers = headers(this._headers);
+        }
+        else {
+            this._headers = headers;
+        }
         return this;
     }
     contentType(type) {
@@ -160,6 +166,10 @@ class Api {
     fetchError(catchFn) {
         return this.error(constants_1.FETCH_ERROR, catchFn);
     }
+    onUnauthorized(unauthorizedFn) {
+        this._onUnauthorizedFn = unauthorizedFn;
+        return this;
+    }
     fetch() {
         return new api_request_1.ApiRequest(async (resolve, reject) => {
             if (this._onAbortSignalFn) {
@@ -173,8 +183,8 @@ class Api {
             }
             this._interceptors.response.forEach((interceptor) => interceptor(response));
             if (response.status === constants_1.HttpStatusCode.UNAUTHORIZED) {
-                const refreshed = await this.processRefreshToken();
-                if (refreshed) {
+                const resolved = await this.processUnauthorized();
+                if (resolved) {
                     resolve(this.fetch());
                 }
             }
@@ -193,10 +203,30 @@ class Api {
             return Promise.resolve(false);
         }
         --this._refreshRetries;
-        const authorization = await this._interceptors.refreshToken?.();
-        if (authorization) {
-            this.authorization(authorization);
-            return Promise.resolve(true);
+        try {
+            const authorization = await this._interceptors.refreshToken?.();
+            if (authorization) {
+                this.authorization(authorization);
+                return Promise.resolve(true);
+            }
+        }
+        catch (error) {
+            console.log(error);
+        }
+        return Promise.resolve(false);
+    }
+    async processUnauthorized() {
+        try {
+            if (this._onUnauthorizedFn) {
+                await this._onUnauthorizedFn(this);
+                return Promise.resolve(true);
+            }
+            if (this._interceptors.refreshToken) {
+                return this.processRefreshToken();
+            }
+        }
+        catch (error) {
+            console.log(error);
         }
         return Promise.resolve(false);
     }
@@ -209,7 +239,7 @@ class Api {
         catch (_) {
             json = undefined;
         }
-        const apiException = new api_exception_1.ApiException(response.status, response.clone(), response.url, textBody, json, textBody);
+        const apiException = new exception_1.ApiException(response.status, response.clone(), response.url, textBody, json, textBody);
         if (this._catches.has(apiException.status)) {
             return (this._catches.get(apiException.status)?.(apiException) ??
                 apiException);
@@ -247,7 +277,7 @@ class Api {
             headers: {
                 ...this._baseOptions?.headers,
                 ...this._options?.headers,
-                [constants_1.CONTENT_TYPE_HEADER]: this._contentType,
+                [constants_1.CONTENT_TYPE_HEADER]: this._contentType ?? constants_1.JSON_MIME_TYPE,
                 ...(!!this._authorization && {
                     [constants_1.AUTHORIZATION_HEADER]: this._authorization,
                 }),
@@ -265,10 +295,15 @@ class Api {
     }
     prepareRequestBody(body) {
         if (body instanceof FormData) {
+            this.contentType(constants_1.MULTIPART_FORM_DATA_MIME_TYPE);
             return body;
         }
         if (body !== null && typeof body === 'object') {
+            this.contentType(constants_1.JSON_MIME_TYPE);
             return JSON.stringify(body);
+        }
+        if (body !== null && typeof body === 'string' && !this._contentType) {
+            this.contentType(constants_1.TEXT_HTML_MIME_TYPE);
         }
         return body;
     }

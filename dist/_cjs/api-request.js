@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ApiRequest = void 0;
 const utils_1 = require("./utils");
+const exception_1 = require("./exception");
 class ApiRequest extends Promise {
     resolver;
     resolverOptions;
@@ -52,7 +53,7 @@ class ApiRequest extends Promise {
     }
     validate(data) {
         if (!this.resolver) {
-            throw new Error('Invalid resolver');
+            throw new exception_1.ResolverException();
         }
         if (!this.resolverOptions?.safe &&
             'parse' in this.resolver &&
@@ -64,7 +65,7 @@ class ApiRequest extends Promise {
             (0, utils_1.isFunction)(this.resolver.safeParse)) {
             return this.resolver.safeParse(data);
         }
-        throw new Error('Invalid resolver');
+        throw new exception_1.ResolverException();
     }
 }
 exports.ApiRequest = ApiRequest;

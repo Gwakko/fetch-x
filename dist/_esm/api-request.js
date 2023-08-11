@@ -1,4 +1,5 @@
 import { isFunction } from './utils';
+import { ResolverException } from './exception';
 export class ApiRequest extends Promise {
     resolver;
     resolverOptions;
@@ -49,7 +50,7 @@ export class ApiRequest extends Promise {
     }
     validate(data) {
         if (!this.resolver) {
-            throw new Error('Invalid resolver');
+            throw new ResolverException();
         }
         if (!this.resolverOptions?.safe &&
             'parse' in this.resolver &&
@@ -61,6 +62,6 @@ export class ApiRequest extends Promise {
             isFunction(this.resolver.safeParse)) {
             return this.resolver.safeParse(data);
         }
-        throw new Error('Invalid resolver');
+        throw new ResolverException();
     }
 }

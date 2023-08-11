@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HttpStatusCode = exports.CATCHER_FALLBACK = exports.FETCH_ERROR = exports.AUTHORIZATION_HEADER = exports.CONTENT_TYPE_HEADER = exports.X_WWW_FORM_URLENCODED_MIME_TYPE = exports.JSON_MIME_TYPE = void 0;
+exports.HttpStatusCode = exports.CATCHER_FALLBACK = exports.FETCH_ERROR = exports.AUTHORIZATION_HEADER = exports.CONTENT_TYPE_HEADER = exports.X_WWW_FORM_URLENCODED_MIME_TYPE = exports.MULTIPART_FORM_DATA_MIME_TYPE = exports.TEXT_HTML_MIME_TYPE = exports.JSON_MIME_TYPE = void 0;
 exports.JSON_MIME_TYPE = 'application/json';
+exports.TEXT_HTML_MIME_TYPE = 'text/html';
+exports.MULTIPART_FORM_DATA_MIME_TYPE = 'multipart/form-data';
 exports.X_WWW_FORM_URLENCODED_MIME_TYPE = 'application/x-www-form-urlencoded';
 exports.CONTENT_TYPE_HEADER = 'Content-Type';
 exports.AUTHORIZATION_HEADER = 'Authorization';
@@ -62,5 +64,5 @@ exports.HttpStatusCode = {
     INSUFFICIENT_STORAGE: 507,
     LOOP_DETECTED: 508,
     NOT_EXTENDED: 510,
-    NETWORK_AUTHENTICATION_REQUIRED: 511
+    NETWORK_AUTHENTICATION_REQUIRED: 511,
 };

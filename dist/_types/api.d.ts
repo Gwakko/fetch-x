@@ -1,41 +1,6 @@
-import { ApiResponseException } from './api.exception';
 import { ApiRequest } from './api-request';
 import { RequestBody, RequestEndpoint, RequestMethod, RequestResolver, RequestResolverOptions, RequestSearchParams } from './types';
-interface RequestInterceptorResult {
-    url?: URL;
-    request?: RequestInit;
-}
-interface RequestInterceptor {
-    (request?: RequestInit): RequestInterceptorResult | undefined | void;
-}
-interface ResponseInterceptor {
-    (response: Response): void;
-}
-interface RefreshTokenInterceptor {
-    (): Promise<string | null>;
-}
-interface Interceptor {
-    request: RequestInterceptor[];
-    response: ResponseInterceptor[];
-    refreshToken: RefreshTokenInterceptor | null;
-}
-interface CatchFn {
-    (exception: ApiResponseException): ApiResponseException;
-}
-interface OnAbortFn {
-    (event: Event): void;
-}
-interface ApiDefaults {
-    baseUrl?: RequestEndpoint;
-    interceptors: Interceptor;
-    headers: HeadersInit;
-    requestOptions: RequestInit;
-    catches: Map<number | symbol, CatchFn>;
-}
-export interface ApiFn {
-    defaults: ApiDefaults;
-    <TResponseData = unknown, TRequestData extends RequestBody = RequestBody>(endpointUrl?: string): Api<TResponseData, TRequestData>;
-}
+import { ApiFn, CatchFn, HeadersFn, OnAbortFn, UnauthorizedInterceptor } from './interface';
 export declare class Api<TResponseBody, TRequestData extends RequestBody> {
     private readonly baseUrl?;
     private _interceptors;
@@ -52,12 +17,13 @@ export declare class Api<TResponseBody, TRequestData extends RequestBody> {
     private _abortController?;
     private _onAbortSignalFn?;
     private _replaceSearchParams;
-    private _contentType;
+    private _contentType?;
     private _authorization?;
+    private _onUnauthorizedFn?;
     private _retries;
     private _refreshRetries;
     constructor(baseUrl?: RequestEndpoint | undefined, options?: RequestInit);
-    headers(headers?: HeadersInit): this;
+    headers(headers?: HeadersInit | HeadersFn): this;
     contentType(type: string): this;
     authorization(authorization: string): this;
     options(options: RequestInit): this;
@@ -81,8 +47,10 @@ export declare class Api<TResponseBody, TRequestData extends RequestBody> {
     timeout(catchFn: CatchFn): this;
     internalError(catchFn: CatchFn): this;
     fetchError(catchFn: CatchFn): this;
+    onUnauthorized(unauthorizedFn: UnauthorizedInterceptor<TResponseBody, TRequestData>): this;
     private fetch;
     private processRefreshToken;
+    private processUnauthorized;
     private processResponseError;
     private assembleRequestUrl;
     private assembleRequestInit;

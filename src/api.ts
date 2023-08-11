@@ -4,8 +4,10 @@ import {
     FETCH_ERROR,
     HttpStatusCode,
     JSON_MIME_TYPE,
+    MULTIPART_FORM_DATA_MIME_TYPE,
+    TEXT_HTML_MIME_TYPE,
 } from './constants';
-import { ApiException, ApiResponseException } from './api.exception';
+import { ApiException, ApiResponseException } from './exception';
 import { ApiRequest } from './api-request';
 import {
     RequestBody,
@@ -15,54 +17,16 @@ import {
     RequestResolverOptions,
     RequestSearchParams,
 } from './types';
-import { isValidURL } from './utils';
-
-interface RequestInterceptorResult {
-    url?: URL;
-    request?: RequestInit;
-}
-
-interface RequestInterceptor {
-    (request?: RequestInit): RequestInterceptorResult | undefined | void;
-}
-
-interface ResponseInterceptor {
-    (response: Response): void;
-}
-
-interface RefreshTokenInterceptor {
-    (): Promise<string | null>;
-}
-
-interface Interceptor {
-    request: RequestInterceptor[];
-    response: ResponseInterceptor[];
-    refreshToken: RefreshTokenInterceptor | null;
-}
-
-interface CatchFn {
-    (exception: ApiResponseException): ApiResponseException;
-}
-
-interface OnAbortFn {
-    (event: Event): void;
-}
-
-interface ApiDefaults {
-    baseUrl?: RequestEndpoint;
-    interceptors: Interceptor;
-    headers: HeadersInit;
-    requestOptions: RequestInit;
-    catches: Map<number | symbol, CatchFn>;
-}
-
-export interface ApiFn {
-    defaults: ApiDefaults;
-
-    <TResponseData = unknown, TRequestData extends RequestBody = RequestBody>(
-        endpointUrl?: string,
-    ): Api<TResponseData, TRequestData>;
-}
+import { isFunction, isValidURL } from './utils';
+import {
+    ApiDefaults,
+    ApiFn,
+    CatchFn,
+    HeadersFn,
+    Interceptor,
+    OnAbortFn,
+    UnauthorizedInterceptor,
+} from './interface';
 
 const defaultSchemaOptions: RequestResolverOptions = {
     safe: false,
@@ -101,8 +65,12 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
     private _abortController?: AbortController;
     private _onAbortSignalFn?: OnAbortFn;
     private _replaceSearchParams = false;
-    private _contentType: string = JSON_MIME_TYPE;
+    private _contentType?: string;
     private _authorization?: string;
+    private _onUnauthorizedFn?: UnauthorizedInterceptor<
+        TResponseBody,
+        TRequestData
+    >;
     private _retries = 0;
     private _refreshRetries = 1;
 
@@ -136,8 +104,13 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
         this._interceptors = structuredClone(defaults.interceptors);
     }
 
-    public headers(headers?: HeadersInit): this {
-        this._headers = headers;
+    public headers(headers?: HeadersInit | HeadersFn): this {
+        if (isFunction(headers)) {
+            this._headers = headers(this._headers);
+        } else {
+            this._headers = headers;
+        }
+
         return this;
     }
 
@@ -274,6 +247,14 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
         return this.error(FETCH_ERROR, catchFn);
     }
 
+    public onUnauthorized(
+        unauthorizedFn: UnauthorizedInterceptor<TResponseBody, TRequestData>,
+    ): this {
+        this._onUnauthorizedFn = unauthorizedFn;
+
+        return this;
+    }
+
     private fetch(): ApiRequest<TResponseBody> {
         return new ApiRequest<TResponseBody>(
             async (resolve, reject) => {
@@ -301,8 +282,8 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
                 );
 
                 if (response.status === HttpStatusCode.UNAUTHORIZED) {
-                    const refreshed = await this.processRefreshToken();
-                    if (refreshed) {
+                    const resolved = await this.processUnauthorized();
+                    if (resolved) {
                         resolve(this.fetch());
                     }
                 }
@@ -331,11 +312,34 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
 
         --this._refreshRetries;
 
-        const authorization = await this._interceptors.refreshToken?.();
+        try {
+            const authorization = await this._interceptors.refreshToken?.();
 
-        if (authorization) {
-            this.authorization(authorization);
-            return Promise.resolve(true);
+            if (authorization) {
+                this.authorization(authorization);
+
+                return Promise.resolve(true);
+            }
+        } catch (error) {
+            console.log(error);
+        }
+
+        return Promise.resolve(false);
+    }
+
+    private async processUnauthorized(): Promise<boolean> {
+        try {
+            if (this._onUnauthorizedFn) {
+                await this._onUnauthorizedFn(this);
+
+                return Promise.resolve(true);
+            }
+
+            if (this._interceptors.refreshToken) {
+                return this.processRefreshToken();
+            }
+        } catch (error) {
+            console.log(error);
         }
 
         return Promise.resolve(false);
@@ -419,7 +423,7 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
             headers: {
                 ...this._baseOptions?.headers,
                 ...this._options?.headers,
-                [CONTENT_TYPE_HEADER]: this._contentType,
+                [CONTENT_TYPE_HEADER]: this._contentType ?? JSON_MIME_TYPE,
                 ...(!!this._authorization && {
                     [AUTHORIZATION_HEADER]: this._authorization,
                 }),
@@ -440,11 +444,19 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
 
     private prepareRequestBody(body: unknown): BodyInit | null {
         if (body instanceof FormData) {
+            this.contentType(MULTIPART_FORM_DATA_MIME_TYPE);
+
             return body;
         }
 
         if (body !== null && typeof body === 'object') {
+            this.contentType(JSON_MIME_TYPE);
+
             return JSON.stringify(body);
+        }
+
+        if (body !== null && typeof body === 'string' && !this._contentType) {
+            this.contentType(TEXT_HTML_MIME_TYPE);
         }
 
         return body as BodyInit | null;

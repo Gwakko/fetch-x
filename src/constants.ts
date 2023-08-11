@@ -1,5 +1,8 @@
 export const JSON_MIME_TYPE = 'application/json';
-export const X_WWW_FORM_URLENCODED_MIME_TYPE = 'application/x-www-form-urlencoded';
+export const TEXT_HTML_MIME_TYPE = 'text/html';
+export const MULTIPART_FORM_DATA_MIME_TYPE = 'multipart/form-data';
+export const X_WWW_FORM_URLENCODED_MIME_TYPE =
+    'application/x-www-form-urlencoded';
 export const CONTENT_TYPE_HEADER = 'Content-Type';
 export const AUTHORIZATION_HEADER = 'Authorization';
 export const FETCH_ERROR = Symbol();
@@ -59,5 +62,5 @@ export const HttpStatusCode = {
     INSUFFICIENT_STORAGE: 507,
     LOOP_DETECTED: 508,
     NOT_EXTENDED: 510,
-    NETWORK_AUTHENTICATION_REQUIRED: 511
+    NETWORK_AUTHENTICATION_REQUIRED: 511,
 } as const;

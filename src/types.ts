@@ -1,7 +1,4 @@
-import {
-    ValidationSchema,
-    ValidationSchemaSafe,
-} from './validation-shema.interface';
+import { ValidationSchema, ValidationSchemaSafe } from './interface';
 
 export type RequestResolver<TResponseData> =
     | ValidationSchema<TResponseData>
