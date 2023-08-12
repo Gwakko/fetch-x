@@ -26,8 +26,7 @@ export class ApiRequest<
         return new this(async (resolve, reject) => {
             try {
                 const response = await promise;
-                const result = await response.json();
-                resolve(result);
+                resolve(response);
             } catch (error) {
                 reject(error);
             }

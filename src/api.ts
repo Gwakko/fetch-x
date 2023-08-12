@@ -109,7 +109,7 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
 
         this._resolverOptions = structuredClone(defaultSchemaOptions);
 
-        this._interceptors = structuredClone(defaults.interceptors);
+        this._interceptors = { ...defaults.interceptors };
     }
 
     public headers(headers?: HeadersInit | HeadersFn): this {
@@ -389,7 +389,7 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
             const result = await this._catches.get(apiException.status)?.(
                 apiException,
             );
-            
+
             return result ?? null;
         }
 
