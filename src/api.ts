@@ -278,40 +278,42 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
                     );
                 }
 
-                const url = this.assembleRequestUrl();
-                const request = this.assembleRequestInit();
+                try {
+                    const url = this.assembleRequestUrl();
+                    const request = this.assembleRequestInit();
 
-                const response = await fetch(url, request);
+                    const response = await fetch(url, request);
 
-                if (this._onAbortSignalFn) {
-                    this._abortController?.signal?.removeEventListener(
-                        'abort',
-                        this._onAbortSignalFn,
+                    this._interceptors.response.forEach((interceptor) =>
+                        interceptor(response),
                     );
-                }
 
-                this._interceptors.response.forEach((interceptor) =>
-                    interceptor(response),
-                );
-
-                if (response.status === HttpStatusCode.UNAUTHORIZED) {
-                    const resolved = await this.processUnauthorized();
-                    if (resolved) {
-                        resolve(this.fetch());
-                    }
-                }
-
-                if (!response.ok) {
-                    if (this._retries > 0) {
-                        --this._retries;
-
-                        resolve(this.fetch());
+                    if (response.status === HttpStatusCode.UNAUTHORIZED) {
+                        const resolved = await this.processUnauthorized();
+                        if (resolved) {
+                            resolve(this.fetch());
+                        }
                     }
 
-                    reject(this.processResponseError(response));
-                }
+                    if (!response.ok) {
+                        if (this._retries > 0) {
+                            --this._retries;
 
-                resolve(response);
+                            resolve(this.fetch());
+                        }
+
+                        reject(this.processResponseError(response));
+                    }
+
+                    resolve(response);
+                } finally {
+                    if (this._onAbortSignalFn) {
+                        this._abortController?.signal?.removeEventListener(
+                            'abort',
+                            this._onAbortSignalFn,
+                        );
+                    }
+                }
             },
             this._resolver,
             this._resolverOptions,
