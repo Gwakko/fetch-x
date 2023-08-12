@@ -302,7 +302,11 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
                             resolve(this.fetch());
                         }
 
-                        reject(this.processResponseError(response));
+                        const error = await this.processResponseError(response);
+
+                        if (error) {
+                            reject(error);
+                        }
                     }
 
                     resolve(response);
@@ -362,7 +366,7 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
 
     private async processResponseError(
         response: Response,
-    ): Promise<ApiResponseException> {
+    ): Promise<ApiResponseException | null> {
         const textBody = await response.clone().text();
 
         let json: unknown = undefined;
@@ -382,16 +386,13 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
         );
 
         if (this._catches.has(apiException.status)) {
-            return (
-                this._catches.get(apiException.status)?.(apiException) ??
-                apiException
-            );
+            await this._catches.get(apiException.status)?.(apiException);
+            return null;
         }
 
         if (this._catches.has(FETCH_ERROR)) {
-            return (
-                this._catches.get(FETCH_ERROR)?.(apiException) ?? apiException
-            );
+            await this._catches.get(FETCH_ERROR)?.(apiException);
+            return null;
         }
 
         return apiException;
