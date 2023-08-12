@@ -184,27 +184,34 @@ export class Api {
             if (this._onAbortSignalFn) {
                 this._abortController?.signal?.addEventListener('abort', this._onAbortSignalFn);
             }
-            const url = this.assembleRequestUrl();
-            const request = this.assembleRequestInit();
-            const response = await fetch(url, request);
-            if (this._onAbortSignalFn) {
-                this._abortController?.signal?.removeEventListener('abort', this._onAbortSignalFn);
+            try {
+                const url = this.assembleRequestUrl();
+                const request = this.assembleRequestInit();
+                const response = await fetch(url, request);
+                this._interceptors.response.forEach((interceptor) => interceptor(response));
+                if (response.status === HttpStatusCode.UNAUTHORIZED) {
+                    const resolved = await this.processUnauthorized();
+                    if (resolved) {
+                        resolve(this.fetch());
+                    }
+                }
+                if (!response.ok) {
+                    if (this._retries > 0) {
+                        --this._retries;
+                        resolve(this.fetch());
+                    }
+                    const error = await this.processResponseError(response);
+                    if (error) {
+                        reject(error);
+                    }
+                }
+                resolve(response);
             }
-            this._interceptors.response.forEach((interceptor) => interceptor(response));
-            if (response.status === HttpStatusCode.UNAUTHORIZED) {
-                const resolved = await this.processUnauthorized();
-                if (resolved) {
-                    resolve(this.fetch());
+            finally {
+                if (this._onAbortSignalFn) {
+                    this._abortController?.signal?.removeEventListener('abort', this._onAbortSignalFn);
                 }
             }
-            if (!response.ok) {
-                if (this._retries > 0) {
-                    --this._retries;
-                    resolve(this.fetch());
-                }
-                reject(this.processResponseError(response));
-            }
-            resolve(response);
         }, this._resolver, this._resolverOptions);
     }
     async processRefreshToken() {
@@ -250,11 +257,12 @@ export class Api {
         }
         const apiException = new ApiException(response.status, response.clone(), response.url, textBody, json, textBody);
         if (this._catches.has(apiException.status)) {
-            return (this._catches.get(apiException.status)?.(apiException) ??
-                apiException);
+            const result = await this._catches.get(apiException.status)?.(apiException);
+            return result ?? null;
         }
         if (this._catches.has(FETCH_ERROR)) {
-            return (this._catches.get(FETCH_ERROR)?.(apiException) ?? apiException);
+            const result = await this._catches.get(FETCH_ERROR)?.(apiException);
+            return result ?? null;
         }
         return apiException;
     }
