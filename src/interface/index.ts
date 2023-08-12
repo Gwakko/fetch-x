@@ -8,3 +8,4 @@ export * from './api-defaults.interface';
 export * from './callback-fn.interface';
 export * from './api-fn.interface';
 export * from './headers-fn.interface';
+export * from './options-fn.interface';

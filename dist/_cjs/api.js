@@ -29,7 +29,6 @@ class Api {
     _catches;
     _headers;
     _options;
-    _baseOptions;
     _url = '';
     _method = 'GET';
     _searchParams = null;
@@ -56,10 +55,18 @@ class Api {
             this.baseUrl = defaults.baseUrl;
         }
         this._catches = new Map(defaults.catches);
-        this._baseOptions = {
+        this._options = {
             ...structuredClone(defaults.requestOptions),
-            ...options,
         };
+        if ((0, utils_1.isFunction)(options)) {
+            this._options = options(this._options);
+        }
+        else {
+            this._options = {
+                ...this._options,
+                ...options,
+            };
+        }
         this._headers = structuredClone(defaults.headers);
         this._resolverOptions = structuredClone(defaultSchemaOptions);
         this._interceptors = structuredClone(defaults.interceptors);
@@ -82,7 +89,12 @@ class Api {
         return this;
     }
     options(options) {
-        this._options = options;
+        if ((0, utils_1.isFunction)(options)) {
+            this._options = options(this._options);
+        }
+        else {
+            this._options = options;
+        }
         return this;
     }
     url(url) {
@@ -272,10 +284,8 @@ class Api {
     }
     prepareRequestOptions() {
         const requestInit = {
-            ...this._baseOptions,
             ...this._options,
             headers: {
-                ...this._baseOptions?.headers,
                 ...this._options?.headers,
                 [constants_1.CONTENT_TYPE_HEADER]: this._contentType ?? constants_1.JSON_MIME_TYPE,
                 ...(!!this._authorization && {

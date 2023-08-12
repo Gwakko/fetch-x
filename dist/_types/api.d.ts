@@ -1,13 +1,12 @@
 import { ApiRequest } from './api-request';
 import { RequestBody, RequestEndpoint, RequestMethod, RequestResolver, RequestResolverOptions, RequestSearchParams } from './types';
-import { ApiFn, CatchFn, HeadersFn, OnAbortFn, UnauthorizedInterceptor } from './interface';
+import { ApiFn, CatchFn, HeadersFn, OnAbortFn, OptionsFn, UnauthorizedInterceptor } from './interface';
 export declare class Api<TResponseBody, TRequestData extends RequestBody> {
     private readonly baseUrl?;
     private _interceptors;
     private _catches;
     private _headers?;
     private _options?;
-    private _baseOptions?;
     private _url;
     private _method;
     private _searchParams;
@@ -22,11 +21,11 @@ export declare class Api<TResponseBody, TRequestData extends RequestBody> {
     private _onUnauthorizedFn?;
     private _retries;
     private _refreshRetries;
-    constructor(baseUrl?: RequestEndpoint | undefined, options?: RequestInit);
+    constructor(baseUrl?: RequestEndpoint | undefined, options?: RequestInit | OptionsFn);
     headers(headers?: HeadersInit | HeadersFn): this;
     contentType(type: string): this;
     authorization(authorization: string): this;
-    options(options: RequestInit): this;
+    options(options: RequestInit | OptionsFn): this;
     url(url: RequestEndpoint): this;
     searchParams(params: RequestSearchParams | null, replace?: boolean): this;
     abortController(controller: AbortController): this;

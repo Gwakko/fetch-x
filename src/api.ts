@@ -25,6 +25,7 @@ import {
     HeadersFn,
     Interceptor,
     OnAbortFn,
+    OptionsFn,
     UnauthorizedInterceptor,
 } from './interface';
 
@@ -55,7 +56,6 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
 
     private _headers?: HeadersInit;
     private _options?: RequestInit;
-    private _baseOptions?: RequestInit;
     private _url: RequestEndpoint = '';
     private _method = 'GET';
     private _searchParams: RequestSearchParams | null = null;
@@ -76,7 +76,7 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
 
     constructor(
         private readonly baseUrl?: RequestEndpoint,
-        options?: RequestInit,
+        options?: RequestInit | OptionsFn,
     ) {
         if (this.baseUrl && !isValidURL(this.baseUrl)) {
             throw new Error('Invalid base URL');
@@ -92,10 +92,18 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
 
         this._catches = new Map<number | symbol, CatchFn>(defaults.catches);
 
-        this._baseOptions = {
+        this._options = {
             ...structuredClone(defaults.requestOptions),
-            ...options,
         };
+
+        if (isFunction(options)) {
+            this._options = options(this._options);
+        } else {
+            this._options = {
+                ...this._options,
+                ...options,
+            };
+        }
 
         this._headers = structuredClone(defaults.headers);
 
@@ -124,8 +132,13 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
         return this;
     }
 
-    public options(options: RequestInit): this {
-        this._options = options;
+    public options(options: RequestInit | OptionsFn): this {
+        if (isFunction(options)) {
+            this._options = options(this._options);
+        } else {
+            this._options = options;
+        }
+
         return this;
     }
 
@@ -418,10 +431,8 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
 
     private prepareRequestOptions(): RequestInit {
         const requestInit: RequestInit = {
-            ...this._baseOptions,
             ...this._options,
             headers: {
-                ...this._baseOptions?.headers,
                 ...this._options?.headers,
                 [CONTENT_TYPE_HEADER]: this._contentType ?? JSON_MIME_TYPE,
                 ...(!!this._authorization && {

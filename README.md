@@ -186,7 +186,10 @@ const apiInstance = fetchx('http://api.localhost') // Base url
     // Authorization header
     .authorization(`Bearer ${accessToken}`)
     // Cors fetch options
-    .options({ credentials: "include", mode: "cors" })
+    .options({
+        credentials: "include",
+        mode: "cors"
+    }) // or .options((prevOpts) => ({ ...prevOpts, credentials: "include", mode: "cors" }))
     // Handle Any Error
     .fetchError((exception) => {/* handle */
     });
@@ -234,6 +237,8 @@ import { fetchx } from '@gwakko/fetch-x';
 
 // Instantiate and configure fetchx
 const api = fetchx('https://jsonplaceholder.typicode.com', { mode: 'cors' });
+// or options with callback
+// const api = fetchx('https://jsonplaceholder.typicode.com', (prevOptions) => ({ ...prevOptions, mode: 'cors' }));
 
 const TodoSchema = z.object({
     userId: z.number(),
