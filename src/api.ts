@@ -386,13 +386,17 @@ export class Api<TResponseBody, TRequestData extends RequestBody> {
         );
 
         if (this._catches.has(apiException.status)) {
-            await this._catches.get(apiException.status)?.(apiException);
-            return null;
+            const result = await this._catches.get(apiException.status)?.(
+                apiException,
+            );
+            
+            return result ?? null;
         }
 
         if (this._catches.has(FETCH_ERROR)) {
-            await this._catches.get(FETCH_ERROR)?.(apiException);
-            return null;
+            const result = await this._catches.get(FETCH_ERROR)?.(apiException);
+
+            return result ?? null;
         }
 
         return apiException;
